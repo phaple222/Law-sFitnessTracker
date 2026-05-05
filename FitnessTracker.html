@@ -398,9 +398,19 @@ tr:hover td{background:var(--card2)}
       <div class="h3">Th&#234;m b&#224;i t&#7853;p</div>
       <label>Nhóm cơ</label>
       <select id="w-muscle" onchange="renderExSuggest(this.value)">
-        <option>Ngực (Chest)</option><option>Lưng (Back)</option><option>Vai (Shoulder)</option>
-        <option>Tay trước (Bicep)</option><option>Tay sau (Tricep)</option><option>Chân (Leg)</option>
-        <option>Mông (Glute)</option><option>Bụng (Core)</option><option>Cardio</option><option>Toàn thân</option>
+        <optgroup label="── Nhóm cơ đơn ──">
+          <option>Ngực (Chest)</option><option>Lưng (Back)</option><option>Vai (Shoulder)</option>
+          <option>Tay trước (Bicep)</option><option>Tay sau (Tricep)</option>
+          <option>Chân (Leg)</option><option>Mông (Glute)</option><option>Bụng (Core)</option>
+          <option>Cardio</option><option>Toàn thân</option>
+        </optgroup>
+        <optgroup label="── Split của bạn ──">
+          <option>Ngực + Vai + Tay sau (Push)</option>
+          <option>Lưng + Tay trước (Pull)</option>
+          <option>Chân + Bụng</option>
+          <option>Upper (Thân trên)</option>
+          <option>Lower (Thân dưới)</option>
+        </optgroup>
       </select>
       <label>Tên bài tập</label>
       <div class="ex-suggest" id="ex-suggest"></div>
@@ -427,6 +437,16 @@ tr:hover td{background:var(--card2)}
     <div class="h3" style="margin:0">📅 Lịch Tập Tuần</div>
     <button class="btn btn-ghost btn-sm" onclick="renderWeeklyPlan()">🔄 Cập nhật</button>
   </div>
+  <div style="margin-bottom:12px">
+    <div style="font-size:12px;color:var(--muted);margin-bottom:8px;font-weight:600">⚡ Áp dụng mẫu lịch nhanh:</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px">
+      <button class="btn btn-ghost btn-sm" onclick="applyTemplate('ppl3')" style="font-size:12px">PPL 3 ngày</button>
+      <button class="btn btn-ghost btn-sm" onclick="applyTemplate('ppl6')" style="font-size:12px">PPL 6 ngày</button>
+      <button class="btn btn-ghost btn-sm" onclick="applyTemplate('upperlower')" style="font-size:12px">Upper/Lower 4 ngày</button>
+      <button class="btn btn-ghost btn-sm" onclick="applyTemplate('custom5')" style="font-size:12px;border-color:var(--primary);color:var(--primary)">★ Lịch của bạn (5 ngày)</button>
+      <button class="btn btn-ghost btn-sm" onclick="clearWeeklyPlan()" style="font-size:12px;color:var(--red);border-color:#2a1212">🗑 Xóa tất cả</button>
+    </div>
+  </div>
   <div class="week-grid" id="week-grid"></div>
 </div>
 
@@ -439,11 +459,20 @@ tr:hover td{background:var(--card2)}
     </div>
     <label>Nhóm cơ / Mục tiêu ngày này</label>
     <select id="day-muscle-select" onchange="renderDayExPicker(this.value)">
-      <option value="">-- Nghỉ ngơi --</option>
-      <option>Ngực (Chest)</option><option>Lưng (Back)</option><option>Vai (Shoulder)</option>
-      <option>Tay trước (Bicep)</option><option>Tay sau (Tricep)</option><option>Chân (Leg)</option>
-      <option>Mông (Glute)</option><option>Bụng (Core)</option><option>Cardio</option><option>Toàn thân</option>
-      <option>Ngực + Tay sau</option><option>Lưng + Tay trước</option><option>Vai + Bụng</option>
+      <option value="">🛌 Nghỉ ngơi</option>
+      <optgroup label="── Split của bạn ──">
+        <option>Ngực + Vai + Tay sau (Push)</option>
+        <option>Lưng + Tay trước (Pull)</option>
+        <option>Chân + Bụng</option>
+        <option>Upper (Thân trên)</option>
+        <option>Lower (Thân dưới)</option>
+      </optgroup>
+      <optgroup label="── Nhóm cơ đơn ──">
+        <option>Ngực (Chest)</option><option>Lưng (Back)</option><option>Vai (Shoulder)</option>
+        <option>Tay trước (Bicep)</option><option>Tay sau (Tricep)</option>
+        <option>Chân (Leg)</option><option>Mông (Glute)</option><option>Bụng (Core)</option>
+        <option>Cardio</option><option>Toàn thân</option>
+      </optgroup>
     </select>
     <label style="margin-top:12px">Bài tập dự kiến <span style="color:var(--muted);font-weight:400">(chọn nhiều)</span></label>
     <div class="ex-pick-grid" id="day-ex-picker"></div>
@@ -1223,19 +1252,157 @@ auth.onAuthStateChanged(async(user)=>{
 
 // ══ EXERCISE DATABASE ══
 const EXERCISE_DB = {
-  'Ngực (Chest)': ['Bench Press','Incline Bench Press','Decline Bench Press','Chest Machine','Cable Fly','Dumbbell Fly','Pec Deck','Push Up','Dumbbell Press','Low Cable Fly'],
-  'Lưng (Back)': ['Pull Up','Chin Up','Lat Pulldown','Seated Cable Row','Bent Over Row','T-Bar Row','Face Pull','Deadlift','Single Arm Row','Hyperextension','Straight Arm Pulldown'],
-  'Vai (Shoulder)': ['Overhead Press','Dumbbell Shoulder Press','Lateral Raise','Front Raise','Rear Delt Fly','Arnold Press','Upright Row','Cable Lateral Raise','Shrug','Reverse Pec Deck'],
-  'Tay trước (Bicep)': ['Barbell Curl','Dumbbell Curl','Hammer Curl','Preacher Curl','Cable Curl','Concentration Curl','Incline Dumbbell Curl','Spider Curl','Cross Body Curl'],
-  'Tay sau (Tricep)': ['Tricep Pushdown','Skull Crusher','Dips','Overhead Extension','Close Grip Bench Press','Kickback','Rope Pushdown','Diamond Push Up'],
-  'Chân (Leg)': ['Squat','Leg Press','Leg Extension','Leg Curl','Romanian Deadlift','Calf Raise','Hack Squat','Lunge','Bulgarian Split Squat','Sumo Squat','Walking Lunge','Seated Calf Raise'],
-  'Mông (Glute)': ['Hip Thrust','Glute Bridge','Cable Kickback','Sumo Squat','Romanian Deadlift','Step Up','Abductor Machine','Donkey Kick','Fire Hydrant'],
-  'Bụng (Core)': ['Crunch','Plank','Leg Raise','Cable Crunch','Russian Twist','Mountain Climber','Hanging Leg Raise','Ab Rollout','Bicycle Crunch','Side Plank','Hollow Hold'],
-  'Cardio': ['Chạy bộ','Đạp xe','Bơi lội','Jump Rope','Rowing Machine','Stairmaster','Elliptical','HIIT','Box Jump'],
-  'Toàn thân': ['Burpee','Thruster','Clean and Press','Kettlebell Swing','Battle Rope','Bear Crawl','Turkish Get Up'],
-  'Ngực + Tay sau': ['Bench Press','Incline Bench Press','Chest Fly','Tricep Pushdown','Skull Crusher','Dips'],
-  'Lưng + Tay trước': ['Pull Up','Lat Pulldown','Seated Row','Barbell Curl','Dumbbell Curl','Hammer Curl'],
-  'Vai + Bụng': ['Overhead Press','Lateral Raise','Rear Delt Fly','Plank','Cable Crunch','Leg Raise']
+  // ── NGỰC ──
+  'Ngực (Chest)': [
+    'Bench Press','Incline Bench Press','Decline Bench Press',
+    'Dumbbell Bench Press','Incline Dumbbell Press','Decline Dumbbell Press',
+    'Chest Machine','Smith Machine Press','Chest Press Machine',
+    'Cable Fly','High Cable Fly','Low Cable Fly','Dumbbell Fly','Incline Dumbbell Fly',
+    'Pec Deck','Svend Press','Squeeze Press',
+    'Push Up','Wide Push Up','Diamond Push Up','Chest Dip','Landmine Press'
+  ],
+  // ── LƯNG ──
+  'Lưng (Back)': [
+    'Pull Up','Chin Up','Wide Grip Pull Up','Close Grip Pull Up','Neutral Grip Pull Up',
+    'Lat Pulldown','Wide Grip Pulldown','Close Grip Pulldown','Reverse Grip Pulldown',
+    'Seated Cable Row','Wide Grip Row','Single Arm Cable Row',
+    'Bent Over Barbell Row','Bent Over Dumbbell Row','Pendlay Row','Yates Row',
+    'T-Bar Row','Chest Supported Row','Machine Row','Meadows Row','Seal Row',
+    'Single Arm Dumbbell Row','One Arm Row',
+    'Deadlift','Rack Pull','Straight Arm Pulldown',
+    'Face Pull','Rope Face Pull','Band Pull Apart',
+    'Hyperextension','Back Extension','Good Morning'
+  ],
+  // ── VAI ──
+  'Vai (Shoulder)': [
+    'Overhead Barbell Press','Seated Dumbbell Press','Standing Dumbbell Press',
+    'Machine Shoulder Press','Smith Machine Press','Arnold Press','Behind The Neck Press',
+    'Lateral Raise','Cable Lateral Raise','Machine Lateral Raise','Leaning Lateral Raise',
+    'Front Raise','Plate Front Raise','Cable Front Raise',
+    'Rear Delt Fly','Reverse Pec Deck','Cable Rear Delt Fly','Bent Over Lateral Raise',
+    'Upright Row','Barbell Shrug','Dumbbell Shrug','Cable Shrug',
+    'Lu Raise','Facepull','Landmine Lateral Raise'
+  ],
+  // ── TAY TRƯỚC ──
+  'Tay trước (Bicep)': [
+    'Barbell Curl','EZ Bar Curl','Dumbbell Curl','Alternating Dumbbell Curl',
+    'Hammer Curl','Cross Body Hammer Curl',
+    'Preacher Curl','Machine Preacher Curl','Spider Curl',
+    'Cable Curl','Rope Curl','Straight Bar Cable Curl',
+    'Concentration Curl','Incline Dumbbell Curl','Drag Curl',
+    'Bayesian Cable Curl','Reverse Curl','Zottman Curl','21s'
+  ],
+  // ── TAY SAU ──
+  'Tay sau (Tricep)': [
+    'Tricep Rope Pushdown','Straight Bar Pushdown','Reverse Grip Pushdown',
+    'Skull Crusher','EZ Bar Skull Crusher','Dumbbell Skull Crusher',
+    'Overhead Tricep Extension','Dumbbell Overhead Extension','Cable Overhead Extension',
+    'Close Grip Bench Press','JM Press','Tate Press',
+    'Dips','Machine Dips','Bench Dip',
+    'Tricep Kickback','Cable Kickback',
+    'Diamond Push Up','Lying Tricep Extension'
+  ],
+  // ── CHÂN ──
+  'Chân (Leg)': [
+    'Back Squat','Front Squat','Goblet Squat','Box Squat','Pause Squat',
+    'Hack Squat','Smith Machine Squat','Belt Squat',
+    'Leg Press','Narrow Stance Leg Press','Wide Stance Leg Press',
+    'Lunge','Walking Lunge','Reverse Lunge','Lateral Lunge',
+    'Bulgarian Split Squat','Step Up','Single Leg Press',
+    'Romanian Deadlift','Stiff Leg Deadlift','Single Leg RDL',
+    'Leg Extension','Single Leg Extension',
+    'Leg Curl','Seated Leg Curl','Nordic Curl','Glute Ham Raise',
+    'Calf Raise','Seated Calf Raise','Leg Press Calf Raise','Donkey Calf Raise',
+    'Sumo Squat','Sissy Squat'
+  ],
+  // ── MÔNG ──
+  'Mông (Glute)': [
+    'Hip Thrust','Barbell Hip Thrust','Banded Hip Thrust',
+    'Glute Bridge','Single Leg Glute Bridge','Frog Pump',
+    'Cable Kickback','Donkey Kick','Fire Hydrant',
+    'Abductor Machine','Cable Hip Abduction',
+    'Step Up','Reverse Hyper','Cable Pull Through',
+    'Single Leg Hip Thrust','Romanian Deadlift','Sumo Squat','Banded Walk'
+  ],
+  // ── BỤNG ──
+  'Bụng (Core)': [
+    'Plank','Side Plank','RKC Plank','Hollow Hold',
+    'Crunch','Cable Crunch','Machine Crunch','Decline Crunch',
+    'Bicycle Crunch','Reverse Crunch',
+    'Leg Raise','Hanging Leg Raise','Lying Leg Raise','Toes to Bar',
+    'Russian Twist','Weighted Russian Twist',
+    'Mountain Climber','Bear Crawl','Dead Bug',
+    'Ab Rollout','Ab Wheel','Dragon Flag',
+    'V-Up','Toe Touch','Flutter Kick',
+    'Pallof Press','Wood Chop','Cable Rotation'
+  ],
+  // ── CARDIO ──
+  'Cardio': [
+    'Chạy bộ','Chạy tốc độ cao (Sprint)','Chạy bộ nhẹ (Jog)',
+    'Đạp xe','Đạp xe leo núi',
+    'Rowing Machine','Elliptical','Stairmaster','Ski Erg',
+    'Bơi lội','Jump Rope','Double Under',
+    'HIIT','Tabata','Circuit Training',
+    'Box Jump','Jumping Jack','Burpee','Battle Rope','Sled Push','Sled Pull'
+  ],
+  // ── TOÀN THÂN ──
+  'Toàn thân': [
+    'Burpee','Thruster','Clean and Press','Power Clean',
+    'Kettlebell Swing','Kettlebell Snatch','Turkish Get Up',
+    'Farmer Walk','Suitcase Carry','Overhead Carry',
+    'Bear Crawl','Sandbag Carry','Med Ball Slam','Wall Ball'
+  ],
+  // ── CÁC SPLIT CỦA BẠN ──
+  'Ngực + Vai + Tay sau (Push)': [
+    // Ngực
+    'Bench Press','Incline Bench Press','Decline Bench Press',
+    'Dumbbell Bench Press','Incline Dumbbell Press',
+    'Cable Fly','Pec Deck','Dumbbell Fly','Chest Machine',
+    // Vai
+    'Overhead Press','Seated Dumbbell Press','Lateral Raise',
+    'Front Raise','Rear Delt Fly','Arnold Press','Reverse Pec Deck',
+    // Tay sau
+    'Tricep Rope Pushdown','Skull Crusher','Dips',
+    'Overhead Tricep Extension','Close Grip Bench Press','Cable Overhead Extension'
+  ],
+  'Lưng + Tay trước (Pull)': [
+    // Lưng
+    'Pull Up','Chin Up','Lat Pulldown','Seated Cable Row',
+    'Bent Over Barbell Row','T-Bar Row','Single Arm Dumbbell Row',
+    'Face Pull','Chest Supported Row','Deadlift','Hyperextension',
+    // Tay trước
+    'Barbell Curl','Dumbbell Curl','Hammer Curl',
+    'Preacher Curl','Cable Curl','Incline Dumbbell Curl','Bayesian Cable Curl'
+  ],
+  'Chân + Bụng': [
+    // Chân
+    'Back Squat','Leg Press','Romanian Deadlift','Leg Extension',
+    'Leg Curl','Lunge','Bulgarian Split Squat','Hack Squat',
+    'Calf Raise','Seated Calf Raise','Hip Thrust','Glute Bridge',
+    // Bụng
+    'Plank','Cable Crunch','Leg Raise','Hanging Leg Raise',
+    'Russian Twist','Ab Rollout','Crunch','Hollow Hold'
+  ],
+  'Upper (Thân trên)': [
+    // Ngực
+    'Bench Press','Incline Bench Press','Cable Fly','Pec Deck',
+    // Lưng
+    'Pull Up','Lat Pulldown','Seated Cable Row','Bent Over Row','Face Pull',
+    // Vai
+    'Overhead Press','Lateral Raise','Rear Delt Fly',
+    // Tay
+    'Dumbbell Curl','Hammer Curl','Tricep Pushdown','Dips'
+  ],
+  'Lower (Thân dưới)': [
+    // Chân
+    'Back Squat','Leg Press','Romanian Deadlift','Leg Extension',
+    'Leg Curl','Lunge','Bulgarian Split Squat','Hack Squat',
+    'Calf Raise','Seated Calf Raise',
+    // Mông
+    'Hip Thrust','Glute Bridge','Cable Kickback','Abductor Machine',
+    // Bụng
+    'Plank','Hanging Leg Raise','Cable Crunch','Ab Rollout'
+  ]
 };
 
 const WEEK_KEY = 'ft_weekly_plan';
@@ -1424,6 +1591,78 @@ function switchManageTab(tab,el){
 function openManageFoods(){
   renderManageFoods();
   document.getElementById('modal-manage-foods').classList.add('open');
+}
+
+
+// ══ WEEKLY PLAN TEMPLATES ══
+const TEMPLATES = {
+  ppl3: {
+    label:'PPL 3 ngày (Push/Pull/Legs)',
+    days:{
+      mon:{muscle:'Ngực + Vai + Tay sau (Push)',exercises:['Bench Press','Incline Bench Press','Overhead Press','Lateral Raise','Tricep Rope Pushdown','Skull Crusher']},
+      tue:{muscle:'Lưng + Tay trước (Pull)',exercises:['Pull Up','Lat Pulldown','Seated Cable Row','Bent Over Barbell Row','Barbell Curl','Hammer Curl']},
+      wed:{muscle:'',exercises:[]},
+      thu:{muscle:'Chân + Bụng',exercises:['Back Squat','Leg Press','Romanian Deadlift','Leg Curl','Calf Raise','Plank','Cable Crunch']},
+      fri:{muscle:'',exercises:[]},
+      sat:{muscle:'',exercises:[]},
+      sun:{muscle:'',exercises:[]}
+    }
+  },
+  ppl6: {
+    label:'PPL 6 ngày',
+    days:{
+      mon:{muscle:'Ngực + Vai + Tay sau (Push)',exercises:['Bench Press','Incline Bench Press','Cable Fly','Overhead Press','Lateral Raise','Tricep Rope Pushdown','Dips']},
+      tue:{muscle:'Lưng + Tay trước (Pull)',exercises:['Pull Up','Lat Pulldown','Seated Cable Row','Bent Over Barbell Row','Face Pull','Barbell Curl','Hammer Curl']},
+      wed:{muscle:'Chân + Bụng',exercises:['Back Squat','Leg Press','Romanian Deadlift','Leg Extension','Leg Curl','Calf Raise','Plank','Hanging Leg Raise']},
+      thu:{muscle:'Ngực + Vai + Tay sau (Push)',exercises:['Incline Dumbbell Press','Dumbbell Fly','Pec Deck','Seated Dumbbell Press','Rear Delt Fly','Skull Crusher','Overhead Tricep Extension']},
+      fri:{muscle:'Lưng + Tay trước (Pull)',exercises:['Chin Up','T-Bar Row','Single Arm Dumbbell Row','Chest Supported Row','Preacher Curl','Cable Curl','Incline Dumbbell Curl']},
+      sat:{muscle:'Chân + Bụng',exercises:['Hack Squat','Bulgarian Split Squat','Lunge','Leg Press','Seated Calf Raise','Hip Thrust','Ab Rollout','Russian Twist']},
+      sun:{muscle:'',exercises:[]}
+    }
+  },
+  upperlower: {
+    label:'Upper/Lower 4 ngày',
+    days:{
+      mon:{muscle:'Upper (Thân trên)',exercises:['Bench Press','Bent Over Barbell Row','Overhead Press','Pull Up','Lateral Raise','Barbell Curl','Tricep Rope Pushdown']},
+      tue:{muscle:'Lower (Thân dưới)',exercises:['Back Squat','Romanian Deadlift','Leg Press','Leg Curl','Leg Extension','Hip Thrust','Calf Raise']},
+      wed:{muscle:'',exercises:[]},
+      thu:{muscle:'Upper (Thân trên)',exercises:['Incline Dumbbell Press','Seated Cable Row','Seated Dumbbell Press','Lat Pulldown','Rear Delt Fly','Hammer Curl','Skull Crusher']},
+      fri:{muscle:'Lower (Thân dưới)',exercises:['Hack Squat','Bulgarian Split Squat','Lunge','Leg Curl','Calf Raise','Glute Bridge','Plank']},
+      sat:{muscle:'',exercises:[]},
+      sun:{muscle:'',exercises:[]}
+    }
+  },
+  custom5: {
+    label:'Lịch của bạn (5 ngày)',
+    days:{
+      mon:{muscle:'Ngực + Vai + Tay sau (Push)',exercises:['Bench Press','Incline Bench Press','Cable Fly','Overhead Press','Lateral Raise','Tricep Rope Pushdown','Skull Crusher']},
+      tue:{muscle:'Lưng + Tay trước (Pull)',exercises:['Pull Up','Lat Pulldown','Seated Cable Row','Bent Over Barbell Row','Face Pull','Barbell Curl','Hammer Curl']},
+      wed:{muscle:'Chân + Bụng',exercises:['Back Squat','Leg Press','Romanian Deadlift','Leg Extension','Leg Curl','Calf Raise','Plank','Cable Crunch']},
+      thu:{muscle:'Upper (Thân trên)',exercises:['Incline Dumbbell Press','Chin Up','Seated Dumbbell Press','T-Bar Row','Rear Delt Fly','Dumbbell Curl','Dips']},
+      fri:{muscle:'Lower (Thân dưới)',exercises:['Hack Squat','Bulgarian Split Squat','Lunge','Leg Curl','Hip Thrust','Glute Bridge','Seated Calf Raise']},
+      sat:{muscle:'',exercises:[]},
+      sun:{muscle:'',exercises:[]}
+    }
+  }
+};
+
+function applyTemplate(key){
+  const tpl = TEMPLATES[key];
+  if(!tpl) return;
+  if(!confirm('Áp dụng mẫu "'+tpl.label+'"?\nSẽ ghi đè lịch hiện tại.')) return;
+  const plan = {};
+  DAYS.forEach(d => {
+    const t = tpl.days[d.key] || {muscle:'',exercises:[]};
+    plan[d.key] = {muscle:t.muscle, exercises:t.exercises, note:''};
+  });
+  ss(WEEK_KEY, plan);
+  renderWeeklyPlan();
+}
+
+function clearWeeklyPlan(){
+  if(!confirm('Xóa toàn bộ lịch tập tuần?')) return;
+  ss(WEEK_KEY, {});
+  renderWeeklyPlan();
 }
 
 </script>
