@@ -108,6 +108,29 @@ tr:hover td{background:var(--card2)}
 .nav-user{display:flex;align-items:center;gap:8px;margin-left:auto;font-size:13px;color:var(--muted)}
 .nav-user span{color:var(--text);font-weight:600;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
+
+/* Exercise suggestions */
+.ex-suggest{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 12px}
+.ex-chip{background:var(--card2);border:1px solid var(--border);border-radius:20px;padding:5px 12px;font-size:12px;cursor:pointer;transition:.15s;color:var(--text)}
+.ex-chip:hover{background:var(--primary);border-color:var(--primary);color:#fff}
+/* Weekly plan */
+.week-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-top:16px}
+.day-card{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px;min-height:140px}
+.day-card.rest{border-color:#2a2a2a;opacity:.6}
+.day-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--primary);margin-bottom:8px}
+.day-date{font-size:10px;color:var(--muted);margin-bottom:8px}
+.day-muscle{font-size:13px;font-weight:600;margin-bottom:6px;min-height:18px}
+.day-exlist{font-size:11px;color:var(--muted);line-height:1.6}
+.day-edit-btn{width:100%;margin-top:8px;background:none;border:1px dashed var(--border);border-radius:6px;padding:5px;font-size:11px;color:var(--muted);cursor:pointer;transition:.15s}
+.day-edit-btn:hover{border-color:var(--primary);color:var(--primary)}
+.today-card{border-color:var(--primary)!important;background:#1a0f08!important}
+/* Modal weekly edit */
+#modal-day-edit .modal{max-width:500px}
+.ex-pick-grid{display:flex;flex-wrap:wrap;gap:6px;max-height:200px;overflow-y:auto;margin:8px 0}
+.ex-pick-chip{background:var(--card2);border:1px solid var(--border);border-radius:16px;padding:5px 11px;font-size:12px;cursor:pointer;transition:.15s}
+.ex-pick-chip:hover,.ex-pick-chip.selected{background:var(--primary);border-color:var(--primary);color:#fff}
+@media(max-width:768px){.week-grid{grid-template-columns:repeat(2,1fr)}}
+
 </style>
 </head>
 <body>
@@ -373,14 +396,15 @@ tr:hover td{background:var(--card2)}
   <div class="grid2">
     <div class="card">
       <div class="h3">Th&#234;m b&#224;i t&#7853;p</div>
-      <label>Nh&#243;m c&#417;</label>
-      <select id="w-muscle">
-        <option>Ng&#7921;c (Chest)</option><option>L&#432;ng (Back)</option><option>Vai (Shoulder)</option>
-        <option>Tay tr&#432;&#7899;c (Bicep)</option><option>Tay sau (Tricep)</option><option>Ch&#226;n (Leg)</option>
-        <option>B&#7909;ng (Core)</option><option>Cardio</option><option>To&#224;n th&#226;n</option>
+      <label>Nhóm cơ</label>
+      <select id="w-muscle" onchange="renderExSuggest(this.value)">
+        <option>Ngực (Chest)</option><option>Lưng (Back)</option><option>Vai (Shoulder)</option>
+        <option>Tay trước (Bicep)</option><option>Tay sau (Tricep)</option><option>Chân (Leg)</option>
+        <option>Mông (Glute)</option><option>Bụng (Core)</option><option>Cardio</option><option>Toàn thân</option>
       </select>
-      <label>T&#234;n b&#224;i t&#7853;p</label>
-      <input type="text" id="w-name" placeholder="VD: Bench Press, Squat, Deadlift...">
+      <label>Tên bài tập</label>
+      <div class="ex-suggest" id="ex-suggest"></div>
+      <input type="text" id="w-name" placeholder="Chọn bài tập bên trên hoặc tự nhập...">
       <div style="font-size:14px;font-weight:600;color:var(--muted);margin-top:16px;margin-bottom:8px">Sets &amp; Reps</div>
       <div id="set-list"></div>
       <button class="btn btn-ghost btn-sm mt16" onclick="addSetRow()" style="width:100%">+ Th&#234;m set</button>
@@ -394,6 +418,38 @@ tr:hover td{background:var(--card2)}
         <div class="empty-state"><div class="em-icon">&#127947;&#65039;</div><div>Ch&#432;a c&#243; b&#224;i t&#7853;p n&#224;o.<br><span style="font-size:12px">H&#227;y b&#7855;t &#273;&#7847;u bu&#7893;i t&#7853;p!</span></div></div>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- WEEKLY PLAN -->
+<div class="card" style="margin-top:20px">
+  <div class="flex-between mb16">
+    <div class="h3" style="margin:0">📅 Lịch Tập Tuần</div>
+    <button class="btn btn-ghost btn-sm" onclick="renderWeeklyPlan()">🔄 Cập nhật</button>
+  </div>
+  <div class="week-grid" id="week-grid"></div>
+</div>
+
+<!-- MODAL: Edit Day Plan -->
+<div class="modal-overlay" id="modal-day-edit">
+  <div class="modal" style="max-width:500px">
+    <div class="flex-between mb16">
+      <div style="font-size:18px;font-weight:700" id="modal-day-title">Thứ 2</div>
+      <button class="btn-icon" onclick="document.getElementById('modal-day-edit').classList.remove('open')">✕</button>
+    </div>
+    <label>Nhóm cơ / Mục tiêu ngày này</label>
+    <select id="day-muscle-select" onchange="renderDayExPicker(this.value)">
+      <option value="">-- Nghỉ ngơi --</option>
+      <option>Ngực (Chest)</option><option>Lưng (Back)</option><option>Vai (Shoulder)</option>
+      <option>Tay trước (Bicep)</option><option>Tay sau (Tricep)</option><option>Chân (Leg)</option>
+      <option>Mông (Glute)</option><option>Bụng (Core)</option><option>Cardio</option><option>Toàn thân</option>
+      <option>Ngực + Tay sau</option><option>Lưng + Tay trước</option><option>Vai + Bụng</option>
+    </select>
+    <label style="margin-top:12px">Bài tập dự kiến <span style="color:var(--muted);font-weight:400">(chọn nhiều)</span></label>
+    <div class="ex-pick-grid" id="day-ex-picker"></div>
+    <label>Ghi chú</label>
+    <input type="text" id="day-note" placeholder="VD: Tập nặng hôm nay, tăng 5kg mỗi bài">
+    <button class="btn btn-primary mt16" style="width:100%" onclick="saveDayPlan()">💾 Lưu lịch ngày này</button>
   </div>
 </div>
 
@@ -652,7 +708,7 @@ async function _cloudSave(k,val){
   }catch(e){console.warn('Cloud sync failed:',e.message)}
 }
 async function _cloudLoad(uid){
-  const keys=['ft_profile','ft_food','ft_workout','ft_measurements','ft_custom_foods'];
+  const keys=['ft_profile','ft_food','ft_workout','ft_measurements','ft_custom_foods','ft_weekly_plan'];
   for(const k of keys){
     try{
       const snap=await db.collection('users').doc(uid).collection('data').doc(k).get();
@@ -661,7 +717,7 @@ async function _cloudLoad(uid){
   }
 }
 function _clearLocal(){
-  ['ft_profile','ft_food','ft_workout','ft_measurements','ft_custom_foods'].forEach(k=>localStorage.removeItem(k));
+  ['ft_profile','ft_food','ft_workout','ft_measurements','ft_custom_foods','ft_weekly_plan'].forEach(k=>localStorage.removeItem(k));
 }
 function today(){return new Date().toISOString().split('T')[0]}
 function fmtDate(d){if(!d)return '';const[y,m,dd]=d.split('-');return dd+'/'+m+'/'+y}
@@ -679,7 +735,7 @@ function nav(page){
   if(idx>=0)document.querySelectorAll('.nav-btn')[idx].classList.add('active');
   if(page==='dashboard')renderDashboard();
   else if(page==='food'){initFoodDate();renderFoodPage();}
-  else if(page==='workout'){initWorkoutDate();renderWorkoutPage();}
+  else if(page==='workout'){initWorkoutDate();renderWorkoutPage();renderWeeklyPlan();const sel=document.getElementById('w-muscle');if(sel)renderExSuggest(sel.value);}
   else if(page==='measurements')renderMeasurements();
   else if(page==='progress')renderProgress();
   else if(page==='profile')loadProfileForm();
@@ -863,20 +919,81 @@ function renderFoodPage(){
   tbl.innerHTML=html;
 }
 
-function searchFood(q){
+// ══ FOOD SEARCH (custom + online) ══
+const CUSTOM_KEY='ft_custom_foods';
+let _ddItems=[];
+let _onlineOn=false;
+
+function getCustomFoods(){return ls(CUSTOM_KEY,[])}
+function getAllFoods(){return [...FOOD_DB,...getCustomFoods().map(f=>({...f,source:'custom'}))]}
+
+function toggleOnlineSearch(){
+  _onlineOn=!_onlineOn;
+  const btn=document.getElementById('online-btn');
+  if(btn){
+    btn.style.background=_onlineOn?'var(--primary)':'';
+    btn.style.color=_onlineOn?'#fff':'';
+    btn.textContent=_onlineOn?'🌐 Online: BẬT':'🌐 Tìm online';
+  }
+  const q=document.getElementById('food-search').value;
+  if(q) searchFood(q);
+}
+
+async function searchFoodOnline(q){
+  try{
+    const url='https://world.openfoodfacts.org/cgi/search.pl?search_terms='+encodeURIComponent(q)+'&search_simple=1&action=process&json=1&page_size=8';
+    const res=await fetch(url,{signal:AbortSignal.timeout(5000)});
+    const data=await res.json();
+    return (data.products||[])
+      .filter(p=>p.product_name&&p.nutriments&&(p.nutriments['energy-kcal_100g']||p.nutriments['energy-kcal'])>0)
+      .slice(0,6)
+      .map(p=>({
+        name:p.product_name,
+        gram:100,
+        protein:Math.round((p.nutriments['proteins_100g']||0)*10)/10,
+        carbs:Math.round((p.nutriments['carbohydrates_100g']||0)*10)/10,
+        fat:Math.round((p.nutriments['fat_100g']||0)*10)/10,
+        calo:Math.round(p.nutriments['energy-kcal_100g']||p.nutriments['energy-kcal']||0),
+        source:'online'
+      }));
+  }catch(e){return [];}
+}
+
+function renderDropdown(localItems, onlineItems){
   const dd=document.getElementById('food-dropdown');
-  if(!q||q.length<1){dd.style.display='none';return;}
-  const results=FOOD_DB.filter(f=>f.name.toLowerCase().includes(q.toLowerCase())).slice(0,12);
-  if(!results.length){dd.style.display='none';return;}
-  dd.innerHTML=results.map(f=>{
+  _ddItems=[...localItems,...onlineItems];
+  if(!_ddItems.length){dd.style.display='none';return;}
+  const srcIcon={custom:'⭐ ',online:'🌐 '};
+  dd.innerHTML=_ddItems.map((f,i)=>{
+    const icon=f.source?srcIcon[f.source]||'📋 ':'📋 ';
     const unit=f.gram===1?'cái':'g';
-    return '<div class="dropdown-item" onclick="selectFood('+FOOD_DB.indexOf(f)+')"><div><div>'+f.name+'</div><div class="dd-macro">P:'+f.protein+'g C:'+f.carbs+'g F:'+f.fat+'g — '+f.calo+'kcal/'+f.gram+unit+'</div></div></div>';
+    const color=f.source==='custom'?'color:#ffd60a':f.source==='online'?'color:#4ecdc4':'';
+    return '<div class="dropdown-item" onclick="pickFood('+i+')"><div><div style="'+color+'">'+icon+f.name+'</div><div class="dd-macro">P:'+f.protein+'g  C:'+f.carbs+'g  F:'+f.fat+'g — '+f.calo+'kcal/'+f.gram+unit+'</div></div></div>';
   }).join('');
   dd.style.display='block';
 }
 
-function selectFood(idx){
-  selectedFood=FOOD_DB[idx];
+async function searchFood(q){
+  const dd=document.getElementById('food-dropdown');
+  if(!q||q.length<1){dd.style.display='none';_ddItems=[];return;}
+  const ql=q.toLowerCase();
+  // Local search immediately
+  const local=getAllFoods().filter(f=>f.name.toLowerCase().includes(ql)).slice(0,10);
+  renderDropdown(local,[]);
+  // Online search async
+  if(_onlineOn){
+    dd.innerHTML+='<div class="dropdown-item" style="color:var(--muted);font-style:italic">🌐 Đang tìm online...</div>';
+    const online=await searchFoodOnline(q);
+    // De-duplicate vs local
+    const localNames=new Set(local.map(f=>f.name.toLowerCase()));
+    const filtered=online.filter(f=>!localNames.has(f.name.toLowerCase()));
+    renderDropdown(local,filtered);
+  }
+}
+
+function pickFood(idx){
+  if(idx<0||idx>=_ddItems.length)return;
+  selectedFood=_ddItems[idx];
   document.getElementById('food-search').value=selectedFood.name;
   document.getElementById('food-dropdown').style.display='none';
   document.getElementById('food-selected-info').style.display='block';
@@ -1102,6 +1219,212 @@ auth.onAuthStateChanged(async(user)=>{
     document.getElementById('nav-username').textContent='';
   }
 });
+
+
+// ══ EXERCISE DATABASE ══
+const EXERCISE_DB = {
+  'Ngực (Chest)': ['Bench Press','Incline Bench Press','Decline Bench Press','Chest Machine','Cable Fly','Dumbbell Fly','Pec Deck','Push Up','Dumbbell Press','Low Cable Fly'],
+  'Lưng (Back)': ['Pull Up','Chin Up','Lat Pulldown','Seated Cable Row','Bent Over Row','T-Bar Row','Face Pull','Deadlift','Single Arm Row','Hyperextension','Straight Arm Pulldown'],
+  'Vai (Shoulder)': ['Overhead Press','Dumbbell Shoulder Press','Lateral Raise','Front Raise','Rear Delt Fly','Arnold Press','Upright Row','Cable Lateral Raise','Shrug','Reverse Pec Deck'],
+  'Tay trước (Bicep)': ['Barbell Curl','Dumbbell Curl','Hammer Curl','Preacher Curl','Cable Curl','Concentration Curl','Incline Dumbbell Curl','Spider Curl','Cross Body Curl'],
+  'Tay sau (Tricep)': ['Tricep Pushdown','Skull Crusher','Dips','Overhead Extension','Close Grip Bench Press','Kickback','Rope Pushdown','Diamond Push Up'],
+  'Chân (Leg)': ['Squat','Leg Press','Leg Extension','Leg Curl','Romanian Deadlift','Calf Raise','Hack Squat','Lunge','Bulgarian Split Squat','Sumo Squat','Walking Lunge','Seated Calf Raise'],
+  'Mông (Glute)': ['Hip Thrust','Glute Bridge','Cable Kickback','Sumo Squat','Romanian Deadlift','Step Up','Abductor Machine','Donkey Kick','Fire Hydrant'],
+  'Bụng (Core)': ['Crunch','Plank','Leg Raise','Cable Crunch','Russian Twist','Mountain Climber','Hanging Leg Raise','Ab Rollout','Bicycle Crunch','Side Plank','Hollow Hold'],
+  'Cardio': ['Chạy bộ','Đạp xe','Bơi lội','Jump Rope','Rowing Machine','Stairmaster','Elliptical','HIIT','Box Jump'],
+  'Toàn thân': ['Burpee','Thruster','Clean and Press','Kettlebell Swing','Battle Rope','Bear Crawl','Turkish Get Up'],
+  'Ngực + Tay sau': ['Bench Press','Incline Bench Press','Chest Fly','Tricep Pushdown','Skull Crusher','Dips'],
+  'Lưng + Tay trước': ['Pull Up','Lat Pulldown','Seated Row','Barbell Curl','Dumbbell Curl','Hammer Curl'],
+  'Vai + Bụng': ['Overhead Press','Lateral Raise','Rear Delt Fly','Plank','Cable Crunch','Leg Raise']
+};
+
+const WEEK_KEY = 'ft_weekly_plan';
+const DAYS = [
+  {key:'mon',label:'Thứ 2'},
+  {key:'tue',label:'Thứ 3'},
+  {key:'wed',label:'Thứ 4'},
+  {key:'thu',label:'Thứ 5'},
+  {key:'fri',label:'Thứ 6'},
+  {key:'sat',label:'Thứ 7'},
+  {key:'sun',label:'CN'}
+];
+
+// ── Exercise suggest chips ──
+function renderExSuggest(muscle){
+  const wrap = document.getElementById('ex-suggest');
+  if(!wrap) return;
+  const list = EXERCISE_DB[muscle] || [];
+  wrap.innerHTML = list.map(ex =>
+    `<div class="ex-chip" onclick="selectExercise('${ex}')">${ex}</div>`
+  ).join('');
+}
+function selectExercise(name){
+  document.getElementById('w-name').value = name;
+  document.querySelectorAll('.ex-chip').forEach(c => c.style.background = '');
+  event.target.style.background = 'var(--primary)';
+  event.target.style.color = '#fff';
+}
+
+// ── Weekly Plan ──
+let _editingDay = null;
+let _selectedDayExs = [];
+
+function getWeeklyPlan(){ return ls(WEEK_KEY, {}); }
+
+function getThisWeekDates(){
+  const now = new Date();
+  const dow = now.getDay(); // 0=Sun
+  const mon = new Date(now);
+  mon.setDate(now.getDate() - (dow === 0 ? 6 : dow - 1));
+  return DAYS.map((_,i) => {
+    const d = new Date(mon); d.setDate(mon.getDate()+i);
+    return d.toISOString().split('T')[0];
+  });
+}
+
+function renderWeeklyPlan(){
+  const grid = document.getElementById('week-grid');
+  if(!grid) return;
+  const plan = getWeeklyPlan();
+  const weekDates = getThisWeekDates();
+  const todayStr = today();
+  grid.innerHTML = DAYS.map((day, i) => {
+    const d = plan[day.key] || {};
+    const isToday = weekDates[i] === todayStr;
+    const isRest = !d.muscle;
+    const dateObj = new Date(weekDates[i]);
+    const dateLabel = dateObj.getDate() + '/' + (dateObj.getMonth()+1);
+    const exHtml = d.exercises && d.exercises.length
+      ? d.exercises.slice(0,4).map(e => '• ' + e).join('<br>') + (d.exercises.length>4?`<br><span style="color:var(--primary)">+${d.exercises.length-4} bài</span>`:'')
+      : '<span style="font-style:italic;font-size:11px">Chưa có bài</span>';
+    return `<div class="day-card${isRest?' rest':''}${isToday?' today-card':''}">
+      <div class="day-label">${day.label}</div>
+      <div class="day-date">${dateLabel}</div>
+      <div class="day-muscle" style="color:${isRest?'var(--muted)':'var(--text)'}">${d.muscle||'Nghỉ ngơi'}</div>
+      <div class="day-exlist">${isRest?'':exHtml}</div>
+      ${d.note?`<div style="font-size:10px;color:var(--muted);margin-top:4px">📝 ${d.note}</div>`:''}
+      <button class="day-edit-btn" onclick="openDayEdit('${day.key}','${day.label}')">✏️ Chỉnh sửa</button>
+    </div>`;
+  }).join('');
+}
+
+function openDayEdit(key, label){
+  _editingDay = key;
+  _selectedDayExs = [];
+  const plan = getWeeklyPlan();
+  const d = plan[key] || {};
+  document.getElementById('modal-day-title').textContent = label;
+  document.getElementById('day-muscle-select').value = d.muscle || '';
+  document.getElementById('day-note').value = d.note || '';
+  _selectedDayExs = d.exercises ? [...d.exercises] : [];
+  renderDayExPicker(d.muscle || '');
+  document.getElementById('modal-day-edit').classList.add('open');
+}
+
+function renderDayExPicker(muscle){
+  const wrap = document.getElementById('day-ex-picker');
+  if(!wrap) return;
+  const list = EXERCISE_DB[muscle] || [];
+  if(!list.length){ wrap.innerHTML = '<span style="color:var(--muted);font-size:12px">Chọn nhóm cơ để xem bài tập</span>'; return; }
+  wrap.innerHTML = list.map(ex => {
+    const sel = _selectedDayExs.includes(ex);
+    return `<div class="ex-pick-chip${sel?' selected':''}" onclick="toggleDayEx(this,'${ex}')">${ex}</div>`;
+  }).join('');
+}
+
+function toggleDayEx(el, name){
+  if(_selectedDayExs.includes(name)){
+    _selectedDayExs = _selectedDayExs.filter(e => e!==name);
+    el.classList.remove('selected');
+  } else {
+    _selectedDayExs.push(name);
+    el.classList.add('selected');
+  }
+}
+
+function saveDayPlan(){
+  if(!_editingDay) return;
+  const plan = getWeeklyPlan();
+  const muscle = document.getElementById('day-muscle-select').value;
+  plan[_editingDay] = {
+    muscle: muscle,
+    exercises: muscle ? [..._selectedDayExs] : [],
+    note: document.getElementById('day-note').value.trim()
+  };
+  ss(WEEK_KEY, plan);
+  document.getElementById('modal-day-edit').classList.remove('open');
+  renderWeeklyPlan();
+}
+
+
+// ══ CUSTOM FOOD MANAGEMENT ══
+function saveCustomFood(e){
+  e.preventDefault();
+  const name=document.getElementById('cf-name').value.trim();
+  const gram=parseFloat(document.getElementById('cf-unit').value)||100;
+  const calo=parseFloat(document.getElementById('cf-calo').value)||0;
+  const protein=parseFloat(document.getElementById('cf-protein').value)||0;
+  const carbs=parseFloat(document.getElementById('cf-carbs').value)||0;
+  const fat=parseFloat(document.getElementById('cf-fat').value)||0;
+  if(!name){alert('Vui lòng nhập tên món ăn');return;}
+  const foods=getCustomFoods();
+  foods.push({id:Date.now(),name,gram,calo,protein,carbs,fat,source:'custom'});
+  ss(CUSTOM_KEY,foods);
+  document.getElementById('cf-name').value='';
+  document.getElementById('cf-calo').value='';
+  document.getElementById('cf-protein').value='';
+  document.getElementById('cf-carbs').value='';
+  document.getElementById('cf-fat').value='';
+  document.getElementById('modal-add-food').classList.remove('open');
+  alert('✅ Đã lưu món ăn: '+name);
+}
+
+function deleteCustomFood(id){
+  if(!confirm('Xóa món này?'))return;
+  const foods=getCustomFoods().filter(f=>f.id!==id);
+  ss(CUSTOM_KEY,foods);
+  renderManageFoods();
+}
+
+function renderManageFoods(){
+  const customs=getCustomFoods();
+  document.getElementById('custom-count').textContent=customs.length;
+  const wrap=document.getElementById('manage-custom-list');
+  if(!customs.length){
+    wrap.innerHTML='<div class="empty-state" style="padding:20px"><div class="em-icon">⭐</div><div>Chưa có món tự thêm nào</div></div>';
+    return;
+  }
+  wrap.innerHTML='<table><thead><tr><th>Tên món</th><th>Khẩu phần</th><th>Calo</th><th>P/C/F</th><th></th></tr></thead><tbody>'+
+    customs.map(f=>'<tr><td>'+f.name+'</td><td>'+f.gram+(f.gram===1?'cái':'g')+'</td><td>'+f.calo+' kcal</td><td style="font-size:12px;color:var(--muted)">'+f.protein+'/'+f.carbs+'/'+f.fat+'g</td><td><button onclick="deleteCustomFood('+f.id+')" style="background:#2a1212;border:1px solid #3a1515;color:var(--red);border-radius:6px;cursor:pointer;padding:3px 8px;font-size:12px">✕</button></td></tr>').join('')+
+  '</tbody></table>';
+}
+
+function filterBuiltin(q){
+  const wrap=document.getElementById('builtin-items');
+  const list=q?FOOD_DB.filter(f=>f.name.toLowerCase().includes(q.toLowerCase())):FOOD_DB;
+  wrap.innerHTML='<table><thead><tr><th>Tên món</th><th>Khẩu phần</th><th>Calo</th><th>P/C/F(g)</th></tr></thead><tbody>'+
+    list.slice(0,50).map(f=>'<tr><td>'+f.name+'</td><td>'+f.gram+(f.gram===1?'cái':'g')+'</td><td>'+f.calo+' kcal</td><td style="font-size:12px;color:var(--muted)">'+f.protein+'/'+f.carbs+'/'+f.fat+'</td></tr>').join('')+
+  '</tbody></table>';
+}
+
+function switchManageTab(tab,el){
+  document.querySelectorAll('#manage-tabs .pill-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  const customWrap=document.getElementById('manage-custom-list');
+  const builtinWrap=document.getElementById('manage-builtin-list');
+  if(tab==='custom'){
+    customWrap.style.display='block';builtinWrap.style.display='none';
+    renderManageFoods();
+  } else {
+    customWrap.style.display='none';builtinWrap.style.display='block';
+    filterBuiltin('');
+  }
+}
+
+function openManageFoods(){
+  renderManageFoods();
+  document.getElementById('modal-manage-foods').classList.add('open');
+}
 
 </script>
 
