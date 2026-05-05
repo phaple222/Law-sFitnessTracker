@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>💪 Fitness Tracker</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{--bg:#0A0A0A;--card:#141414;--card2:#1E1E1E;--primary:#FF6B35;--primary2:#ff8c5e;--teal:#4ECDC4;--green:#00D4AA;--yellow:#FFD60A;--red:#FF4757;--text:#F0F0F0;--muted:#888;--border:#2A2A2A}
@@ -89,9 +92,60 @@ tr:hover td{background:var(--card2)}
 ::-webkit-scrollbar-track{background:var(--card)}
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
 @media(max-width:640px){.grid4{grid-template-columns:repeat(2,1fr)}.grid3{grid-template-columns:1fr}.grid2{grid-template-columns:1fr}}
+
+/* ── AUTH OVERLAY ── */
+#auth-overlay{position:fixed;inset:0;background:#0A0A0A;z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px}
+#auth-overlay.hidden{display:none}
+.auth-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:36px 32px;width:100%;max-width:420px}
+.auth-logo{text-align:center;font-size:48px;margin-bottom:6px}
+.auth-title{text-align:center;font-size:22px;font-weight:700;margin-bottom:4px}
+.auth-sub{text-align:center;font-size:13px;color:var(--muted);margin-bottom:24px}
+.auth-tabs{display:flex;gap:4px;margin-bottom:20px;background:var(--card2);border-radius:10px;padding:4px}
+.auth-tab{flex:1;text-align:center;padding:9px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;color:var(--muted);transition:.2s}
+.auth-tab.active{background:var(--primary);color:#fff}
+.auth-err{background:#2a1212;border:1px solid var(--red);border-radius:8px;padding:10px 12px;font-size:13px;color:var(--red);margin-bottom:12px;display:none}
+.auth-spinner{text-align:center;color:var(--muted);padding:24px;font-size:14px}
+.nav-user{display:flex;align-items:center;gap:8px;margin-left:auto;font-size:13px;color:var(--muted)}
+.nav-user span{color:var(--text);font-weight:600;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
 </style>
 </head>
 <body>
+<!-- ══ AUTH OVERLAY ══ -->
+<div id="auth-overlay">
+  <div class="auth-card">
+    <div class="auth-logo">💪</div>
+    <div class="auth-title">Fitness Tracker</div>
+    <div class="auth-sub">Đăng nhập để xem và đồng bộ dữ liệu cá nhân</div>
+    <div id="auth-spinner" class="auth-spinner">⏳ Đang kiểm tra đăng nhập...</div>
+    <div id="auth-forms" style="display:none">
+      <div class="auth-tabs">
+        <div class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">Đăng nhập</div>
+        <div class="auth-tab" id="tab-register" onclick="switchAuthTab('register')">Đăng ký</div>
+      </div>
+      <div class="auth-err" id="auth-err"></div>
+      <!-- Login -->
+      <div id="form-login">
+        <label>Email</label>
+        <input type="email" id="auth-email" placeholder="example@gmail.com" onkeydown="if(event.key==='Enter')doLogin()">
+        <label>Mật khẩu</label>
+        <input type="password" id="auth-pwd" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+        <button class="btn btn-primary mt16" style="width:100%;padding:13px" onclick="doLogin()">Đăng nhập</button>
+      </div>
+      <!-- Register -->
+      <div id="form-register" style="display:none">
+        <label>Tên của bạn</label>
+        <input type="text" id="auth-name" placeholder="Nguyễn Văn A">
+        <label>Email</label>
+        <input type="email" id="auth-regemail" placeholder="example@gmail.com">
+        <label>Mật khẩu (ít nhất 6 ký tự)</label>
+        <input type="password" id="auth-regpwd" placeholder="••••••••" onkeydown="if(event.key==='Enter')doRegister()">
+        <button class="btn btn-primary mt16" style="width:100%;padding:13px" onclick="doRegister()">Tạo tài khoản</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <nav>
   <div class="nav-inner">
     <div class="nav-brand">&#128170; FitTracker</div>
@@ -100,7 +154,8 @@ tr:hover td{background:var(--card2)}
     <button class="nav-btn" onclick="nav('food')">&#127869;&#65039; Nh&#7853;t K&#253; &#258;n</button>
     <button class="nav-btn" onclick="nav('workout')">&#127947;&#65039; L&#7883;ch T&#7853;p</button>
     <button class="nav-btn" onclick="nav('measurements')">&#128207; S&#7889; &#272;o</button>
-    <button class="nav-btn" onclick="nav('progress')">&#128200; Ti&#7871;n Tr&#236;nh</button>
+    <button class="nav-btn" onclick="nav('progress')">&#128200; Tiến Trình</button>
+    <div class="nav-user"><span id="nav-username"></span><button class="nav-btn btn-sm" onclick="doLogout()" style="color:var(--red);border:1px solid #2a1212;background:#1a0a0a">&#9211; Thoát</button></div>
   </div>
 </nav>
 <main>
@@ -263,10 +318,16 @@ tr:hover td{background:var(--card2)}
     <div class="h3">Th&#234;m th&#7921;c ph&#7849;m</div>
     <div class="grid2" style="gap:12px;align-items:start">
       <div>
-        <div class="search-wrap mb12" style="margin-bottom:12px">
+        <div class="search-wrap" style="margin-bottom:8px">
           <span class="search-icon">&#128269;</span>
           <input type="text" id="food-search" placeholder="T&#236;m t&#234;n m&#243;n &#259;n..." oninput="searchFood(this.value)" autocomplete="off">
           <div class="dropdown" id="food-dropdown" style="display:none"></div>
+        </div>
+        <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+          <button class="btn btn-ghost btn-sm" onclick="document.getElementById('modal-add-food').classList.add('open')">&#43; Th&#234;m m&#243;n m&#7899;i</button>
+          <button class="btn btn-ghost btn-sm" id="online-btn" onclick="toggleOnlineSearch()">&#127758; T&#236;m online</button>
+          <button class="btn btn-ghost btn-sm" onclick="openManageFoodsModal()">&#128203; Qu&#7843;n l&#253; DB</button>
+          <span id="online-status" style="font-size:12px;color:var(--muted);align-self:center;display:none">&#9203; &#272;ang t&#236;m...</span>
         </div>
         <div id="food-selected-info" style="display:none;background:var(--card2);border-radius:8px;padding:10px 12px;font-size:13px;border:1px solid var(--border)">
           <div style="font-weight:600;margin-bottom:4px" id="fsi-name">&#8212;</div>
@@ -570,8 +631,38 @@ const FOOD_DB=[
 const KEYS={profile:'ft_profile',food:'ft_food',workout:'ft_workout',measurements:'ft_measurements'};
 let selectedFood=null,setCounter=0,weightChart=null,measureChart=null,macroChart=null;
 
+// ══ FIREBASE INIT ══
+const _fbCfg={apiKey:"AIzaSyA3R4csxyLqHdEMzUf54ZDDkdydGMWRWXY",authDomain:"fitness-tracker-e54ec.firebaseapp.com",projectId:"fitness-tracker-e54ec",storageBucket:"fitness-tracker-e54ec.firebasestorage.app",messagingSenderId:"887785386625",appId:"1:887785386625:web:591e7ce90dd8438ec61380"};
+firebase.initializeApp(_fbCfg);
+const auth=firebase.auth();
+const db=firebase.firestore();
+let currentUid=null;
+
+// ══ LOCAL STORAGE HELPERS ══
 function ls(k,d=null){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch{return d}}
-function ss(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){alert('Lỗi lưu dữ liệu!')}}
+function ss(k,val){
+  try{
+    localStorage.setItem(k,JSON.stringify(val));
+    if(currentUid) _cloudSave(k,val);
+  }catch(e){console.error('Save error',e)}
+}
+async function _cloudSave(k,val){
+  try{
+    await db.collection('users').doc(currentUid).collection('data').doc(k).set({v:val,ts:Date.now()});
+  }catch(e){console.warn('Cloud sync failed:',e.message)}
+}
+async function _cloudLoad(uid){
+  const keys=['ft_profile','ft_food','ft_workout','ft_measurements','ft_custom_foods'];
+  for(const k of keys){
+    try{
+      const snap=await db.collection('users').doc(uid).collection('data').doc(k).get();
+      if(snap.exists&&snap.data().v!==undefined) localStorage.setItem(k,JSON.stringify(snap.data().v));
+    }catch(e){console.warn('Load',k,'failed:',e.message)}
+  }
+}
+function _clearLocal(){
+  ['ft_profile','ft_food','ft_workout','ft_measurements','ft_custom_foods'].forEach(k=>localStorage.removeItem(k));
+}
 function today(){return new Date().toISOString().split('T')[0]}
 function fmtDate(d){if(!d)return '';const[y,m,dd]=d.split('-');return dd+'/'+m+'/'+y}
 function r1(n){return Math.round(n*10)/10}
@@ -940,6 +1031,131 @@ function renderMacroChart(){
 initFoodDate=function(){const el=document.getElementById('food-date');if(el&&!el.value)el.value=today();};
 addSetRow();addSetRow();addSetRow();
 renderDashboard();
+
+// ══ AUTH FUNCTIONS ══
+function switchAuthTab(tab){
+  document.getElementById('tab-login').classList.toggle('active',tab==='login');
+  document.getElementById('tab-register').classList.toggle('active',tab==='register');
+  document.getElementById('form-login').style.display=tab==='login'?'block':'none';
+  document.getElementById('form-register').style.display=tab==='register'?'block':'none';
+  document.getElementById('auth-err').style.display='none';
+}
+function _authErr(msg){
+  const el=document.getElementById('auth-err');el.textContent=msg;el.style.display='block';
+}
+const _authMsgs={
+  'auth/user-not-found':'Email không tồn tại',
+  'auth/wrong-password':'Sai mật khẩu',
+  'auth/invalid-email':'Email không hợp lệ',
+  'auth/invalid-credential':'Email hoặc mật khẩu không đúng',
+  'auth/email-already-in-use':'Email đã được đăng ký',
+  'auth/weak-password':'Mật khẩu quá yếu (ít nhất 6 ký tự)',
+  'auth/too-many-requests':'Quá nhiều lần thử, vui lòng thử lại sau'
+};
+async function doLogin(){
+  const email=document.getElementById('auth-email').value.trim();
+  const pwd=document.getElementById('auth-pwd').value;
+  if(!email||!pwd){_authErr('Vui lòng nhập email và mật khẩu');return;}
+  document.getElementById('auth-err').style.display='none';
+  try{ await auth.signInWithEmailAndPassword(email,pwd); }
+  catch(e){ _authErr(_authMsgs[e.code]||('Lỗi: '+e.message)); }
+}
+async function doRegister(){
+  const name=document.getElementById('auth-name').value.trim();
+  const email=document.getElementById('auth-regemail').value.trim();
+  const pwd=document.getElementById('auth-regpwd').value;
+  if(!name||!email||!pwd){_authErr('Vui lòng điền đầy đủ thông tin');return;}
+  document.getElementById('auth-err').style.display='none';
+  try{
+    const cred=await auth.createUserWithEmailAndPassword(email,pwd);
+    await cred.user.updateProfile({displayName:name});
+  }catch(e){ _authErr(_authMsgs[e.code]||('Lỗi: '+e.message)); }
+}
+async function doLogout(){
+  if(!confirm('Đăng xuất khỏi tài khoản?'))return;
+  _clearLocal();
+  currentUid=null;
+  await auth.signOut();
+}
+
+// ══ AUTH STATE LISTENER ══
+auth.onAuthStateChanged(async(user)=>{
+  const overlay=document.getElementById('auth-overlay');
+  const spinner=document.getElementById('auth-spinner');
+  const forms=document.getElementById('auth-forms');
+  if(user){
+    spinner.textContent='⏳ Đang tải dữ liệu...';
+    spinner.style.display='block';
+    forms.style.display='none';
+    currentUid=user.uid;
+    await _cloudLoad(user.uid);
+    // Show username in nav
+    const uname=document.getElementById('nav-username');
+    if(uname) uname.textContent=user.displayName||user.email.split('@')[0];
+    overlay.classList.add('hidden');
+    nav('dashboard');
+  } else {
+    currentUid=null;
+    spinner.style.display='none';
+    forms.style.display='block';
+    overlay.classList.remove('hidden');
+    document.getElementById('nav-username').textContent='';
+  }
+});
+
 </script>
+
+<!-- MODAL: Add Custom Food -->
+<div class="modal-overlay" id="modal-add-food">
+  <div class="modal">
+    <div class="flex-between mb16">
+      <div style="font-size:18px;font-weight:700">&#43; Thêm Món Ăn Mới</div>
+      <button class="btn-icon" onclick="document.getElementById('modal-add-food').classList.remove('open')" style="background:var(--card2);border:1px solid var(--border)">&#10005;</button>
+    </div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:14px">Món ăn sẽ được lưu vào danh sách cá nhân của bạn</div>
+    <form onsubmit="saveCustomFood(event)">
+      <label>Tên món ăn</label>
+      <input type="text" id="cf-name" placeholder="VD: Gà kho gừng" required>
+      <div class="grid2">
+        <div><label>Khẩu phần chuẩn</label>
+          <select id="cf-unit">
+            <option value="100">100g (mặc định)</option>
+            <option value="1">1 cái / 1 phần</option>
+            <option value="50">50g</option>
+            <option value="150">150g</option>
+            <option value="200">200g</option>
+          </select>
+        </div>
+        <div><label>Calo (kcal)</label><input type="number" id="cf-calo" placeholder="165" min="0" required></div>
+      </div>
+      <div class="grid3">
+        <div><label>Protein (g)</label><input type="number" id="cf-protein" placeholder="23" min="0" step="0.1" required></div>
+        <div><label>Carb (g)</label><input type="number" id="cf-carbs" placeholder="0" min="0" step="0.1" required></div>
+        <div><label>Fat (g)</label><input type="number" id="cf-fat" placeholder="2.6" min="0" step="0.1" required></div>
+      </div>
+      <button type="submit" class="btn btn-primary mt16" style="width:100%">&#128190; Lưu món ăn</button>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: Manage Custom Foods -->
+<div class="modal-overlay" id="modal-manage-foods">
+  <div class="modal" style="max-width:640px">
+    <div class="flex-between mb16">
+      <div style="font-size:18px;font-weight:700">&#128203; Quản Lý Thực Phẩm</div>
+      <button class="btn-icon" onclick="document.getElementById('modal-manage-foods').classList.remove('open')" style="background:var(--card2);border:1px solid var(--border)">&#10005;</button>
+    </div>
+    <div class="pill-tabs" id="manage-tabs" style="margin-bottom:14px">
+      <div class="pill-tab active" onclick="switchManageTab('custom',this)">&#11088; Món tự thêm (<span id="custom-count">0</span>)</div>
+      <div class="pill-tab" onclick="switchManageTab('builtin',this)">&#128218; Có sẵn (196)</div>
+    </div>
+    <div id="manage-custom-list" style="max-height:400px;overflow-y:auto"></div>
+    <div id="manage-builtin-list" style="max-height:400px;overflow-y:auto;display:none">
+      <input type="text" id="builtin-search" placeholder="Tìm trong danh sách có sẵn..." oninput="filterBuiltin(this.value)" style="margin-bottom:10px">
+      <div id="builtin-items"></div>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
