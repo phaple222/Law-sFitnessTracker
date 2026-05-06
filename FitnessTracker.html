@@ -1221,20 +1221,33 @@ async function doLogin(){
   const email=document.getElementById('auth-email').value.trim();
   const pwd=document.getElementById('auth-pwd').value;
   if(!email||!pwd){_authErr('Vui lòng nhập email và mật khẩu');return;}
+  if(!auth){_authErr('Firebase chưa sẵn sàng, tải lại trang và thử lại');return;}
+  const btn=document.querySelector('#form-login .btn-primary');
+  if(btn){btn.textContent='⏳ Đang đăng nhập...';btn.disabled=true;}
   document.getElementById('auth-err').style.display='none';
-  try{ await auth.signInWithEmailAndPassword(email,pwd); }
-  catch(e){ _authErr(_authMsgs[e.code]||('Lỗi: '+e.message)); }
+  try{
+    await auth.signInWithEmailAndPassword(email,pwd);
+  }catch(e){
+    _authErr(_authMsgs[e.code]||('Lỗi: '+e.message));
+    if(btn){btn.textContent='Đăng nhập';btn.disabled=false;}
+  }
 }
 async function doRegister(){
   const name=document.getElementById('auth-name').value.trim();
   const email=document.getElementById('auth-regemail').value.trim();
   const pwd=document.getElementById('auth-regpwd').value;
   if(!name||!email||!pwd){_authErr('Vui lòng điền đầy đủ thông tin');return;}
+  if(!auth){_authErr('Firebase chưa sẵn sàng, tải lại trang và thử lại');return;}
+  const btn=document.querySelector('#form-register .btn-primary');
+  if(btn){btn.textContent='⏳ Đang tạo...';btn.disabled=true;}
   document.getElementById('auth-err').style.display='none';
   try{
     const cred=await auth.createUserWithEmailAndPassword(email,pwd);
     await cred.user.updateProfile({displayName:name});
-  }catch(e){ _authErr(_authMsgs[e.code]||('Lỗi: '+e.message)); }
+  }catch(e){
+    _authErr(_authMsgs[e.code]||('Lỗi: '+e.message));
+    if(btn){btn.textContent='Tạo tài khoản';btn.disabled=false;}
+  }
 }
 async function doLogout(){
   if(!confirm('Đăng xuất khỏi tài khoản?'))return;
