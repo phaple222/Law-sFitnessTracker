@@ -1238,27 +1238,41 @@ async function doLogout(){
 }
 
 // ══ AUTH STATE LISTENER ══
+function _showLoginForm(){
+  const spinner=document.getElementById('auth-spinner');
+  const forms=document.getElementById('auth-forms');
+  if(spinner) spinner.style.display='none';
+  if(forms) forms.style.display='block';
+  document.getElementById('auth-overlay').classList.remove('hidden');
+}
+
+// Timeout fallback: nếu Firebase không phản hồi sau 6s thì show login form
+const _authTimeout=setTimeout(()=>{
+  if(document.getElementById('auth-forms').style.display==='none'){
+    console.warn('Auth timeout - showing login form');
+    _showLoginForm();
+  }
+},6000);
+
 auth.onAuthStateChanged(async(user)=>{
+  clearTimeout(_authTimeout);
   const overlay=document.getElementById('auth-overlay');
   const spinner=document.getElementById('auth-spinner');
   const forms=document.getElementById('auth-forms');
   if(user){
-    spinner.textContent='⏳ Đang tải dữ liệu...';
-    spinner.style.display='block';
-    forms.style.display='none';
+    if(spinner){spinner.textContent='⏳ Đang tải dữ liệu...';spinner.style.display='block';}
+    if(forms) forms.style.display='none';
     currentUid=user.uid;
-    await _cloudLoad(user.uid);
-    // Show username in nav
+    try{ await _cloudLoad(user.uid); }catch(e){ console.warn('Cloud load error:',e); }
     const uname=document.getElementById('nav-username');
     if(uname) uname.textContent=user.displayName||user.email.split('@')[0];
     overlay.classList.add('hidden');
     nav('dashboard');
   } else {
     currentUid=null;
-    spinner.style.display='none';
-    forms.style.display='block';
-    overlay.classList.remove('hidden');
-    document.getElementById('nav-username').textContent='';
+    _showLoginForm();
+    const uname=document.getElementById('nav-username');
+    if(uname) uname.textContent='';
   }
 });
 
