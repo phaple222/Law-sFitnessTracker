@@ -722,11 +722,17 @@ const KEYS={profile:'ft_profile',food:'ft_food',workout:'ft_workout',measurement
 let selectedFood=null,setCounter=0,weightChart=null,measureChart=null,macroChart=null;
 
 // ══ FIREBASE INIT ══
-const _fbCfg={apiKey:"AIzaSyA3R4csxyLqHdEMzUf54ZDDkdydGMWRWXY",authDomain:"fitness-tracker-e54ec.firebaseapp.com",projectId:"fitness-tracker-e54ec",storageBucket:"fitness-tracker-e54ec.firebasestorage.app",messagingSenderId:"887785386625",appId:"1:887785386625:web:591e7ce90dd8438ec61380"};
-firebase.initializeApp(_fbCfg);
-const auth=firebase.auth();
-const db=firebase.firestore();
-let currentUid=null;
+let auth, db, currentUid=null;
+try{
+  const _fbCfg={apiKey:"AIzaSyA3R4csxyLqHdEMzUf54ZDDkdydGMWRWXY",authDomain:"fitness-tracker-e54ec.firebaseapp.com",projectId:"fitness-tracker-e54ec",storageBucket:"fitness-tracker-e54ec.firebasestorage.app",messagingSenderId:"887785386625",appId:"1:887785386625:web:591e7ce90dd8438ec61380"};
+  if(!firebase.apps.length) firebase.initializeApp(_fbCfg);
+  auth=firebase.auth();
+  db=firebase.firestore();
+}catch(e){
+  console.error('Firebase init failed:',e);
+  // Show login form immediately if Firebase fails
+  window.addEventListener('DOMContentLoaded',()=>{ _showLoginForm && _showLoginForm(); });
+}
 
 // ══ LOCAL STORAGE HELPERS ══
 function ls(k,d=null){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch{return d}}
@@ -1252,9 +1258,10 @@ const _authTimeout=setTimeout(()=>{
     console.warn('Auth timeout - showing login form');
     _showLoginForm();
   }
-},6000);
+},3000);
 
-auth.onAuthStateChanged(async(user)=>{
+if(!auth){ _showLoginForm(); }
+else auth.onAuthStateChanged(async(user)=>{
   clearTimeout(_authTimeout);
   const overlay=document.getElementById('auth-overlay');
   const spinner=document.getElementById('auth-spinner');
