@@ -200,7 +200,7 @@ tr:hover td{background:var(--card2)}
       </div>
       <button class="btn btn-primary btn-sm" onclick="nav('food')">+ Th&#234;m th&#7921;c ph&#7849;m</button>
     </div>
-    <div class="grid4 mb16">
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:16px">
       <div class="stat-card" style="--accent:var(--primary)">
         <div class="stat-label">BMI</div>
         <div class="stat-val" id="d-bmi">&#8212;</div>
@@ -212,13 +212,18 @@ tr:hover td{background:var(--card2)}
         <div class="stat-sub">kcal/ng&#224;y (ngh&#7881; ng&#417;i)</div>
       </div>
       <div class="stat-card" style="--accent:var(--green)">
-        <div class="stat-label">TDEE</div>
-        <div class="stat-val" id="d-tdee">&#8212;</div>
-        <div class="stat-sub">kcal/ng&#224;y (m&#7909;c ti&#234;u)</div>
+        <div class="stat-label">TDEE (duy trì)</div>
+        <div class="stat-val" id="d-tdee">—</div>
+        <div class="stat-sub">kcal/ngày</div>
+      </div>
+      <div class="stat-card" style="--accent:var(--primary)">
+        <div class="stat-label">Calo mục tiêu</div>
+        <div class="stat-val" id="d-goalcals">—</div>
+        <div class="stat-sub" id="d-goalcals-sub">kcal/ngày</div>
       </div>
       <div class="stat-card" style="--accent:var(--yellow)">
-        <div class="stat-label">C&#226;n n&#7863;ng</div>
-        <div class="stat-val" id="d-weight">&#8212;</div>
+        <div class="stat-label">Cân nặng</div>
+        <div class="stat-val" id="d-weight">—</div>
         <div class="stat-sub" id="d-weight-sub">kg</div>
       </div>
     </div>
@@ -773,10 +778,13 @@ function nav(page){
 function calcBMR(p){
   return p.gender==='nam'?(10*p.weight+6.25*p.height-5*p.age+5):(10*p.weight+6.25*p.height-5*p.age-161);
 }
-function calcTDEE(p){
-  const base=calcBMR(p)*p.activity;
-  return p.goal==='cut'?base*0.85:p.goal==='bulk'?base*1.1:base;
+function calcMaintenance(p){ return calcBMR(p)*p.activity; }
+function calcGoalCals(p){
+  const base=calcMaintenance(p);
+  return p.goal==='cut'?r0(base*0.85):p.goal==='bulk'?r0(base*1.1):r0(base);
 }
+// giữ backward compat
+function calcTDEE(p){ return calcGoalCals(p); }
 function calcBMI(p){return p.weight/(p.height/100)**2}
 function bmiCat(bmi){
   if(bmi<18.5)return{text:'Thiếu cân',cls:'badge-blue'};
@@ -814,13 +822,14 @@ function saveProfile(e){
 }
 
 function showCalcResults(p){
-  const bmr=r0(calcBMR(p)),tdee=r0(calcTDEE(p)),bmi=r1(calcBMI(p)),cat=bmiCat(bmi),mt=macroTargets(p);
+  const bmr=r0(calcBMR(p)),maint=r0(calcMaintenance(p)),goalCals=r0(calcGoalCals(p)),bmi=r1(calcBMI(p)),cat=bmiCat(bmi),mt=macroTargets(p);
+  const goalLbl={'cut':'🔥 Giảm mỡ (TDEE − 15%)','bulk':'💪 Tăng cơ (TDEE + 10%)','maintain':'⚖️ Duy trì'}[p.goal]||'';
   document.getElementById('calc-results').innerHTML=`
-  <div class="grid2" style="gap:10px;margin-bottom:12px">
+  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:12px">
     <div style="background:var(--card2);border-radius:8px;padding:12px;text-align:center"><div style="font-size:11px;color:var(--muted)">BMI</div><div style="font-size:24px;font-weight:700">${bmi}</div><span class="badge ${cat.cls}">${cat.text}</span></div>
     <div style="background:var(--card2);border-radius:8px;padding:12px;text-align:center"><div style="font-size:11px;color:var(--muted)">BMR (nghỉ ngơi)</div><div style="font-size:24px;font-weight:700">${bmr}</div><div style="font-size:11px;color:var(--muted)">kcal/ngày</div></div>
-    <div style="background:var(--card2);border-radius:8px;padding:12px;text-align:center"><div style="font-size:11px;color:var(--muted)">TDEE (mục tiêu)</div><div style="font-size:24px;font-weight:700;color:var(--primary)">${tdee}</div><div style="font-size:11px;color:var(--muted)">kcal/ngày</div></div>
-    <div style="background:var(--card2);border-radius:8px;padding:12px;text-align:center"><div style="font-size:11px;color:var(--muted)">Hoạt động</div><div style="font-size:24px;font-weight:700">${p.activity}x</div><div style="font-size:11px;color:var(--muted)">BMR × ${p.activity}</div></div>
+    <div style="background:var(--card2);border-radius:8px;padding:12px;text-align:center"><div style="font-size:11px;color:var(--teal)">TDEE (duy trì cân nặng)</div><div style="font-size:24px;font-weight:700;color:var(--teal)">${maint}</div><div style="font-size:11px;color:var(--muted)">kcal/ngày</div></div>
+    <div style="background:var(--card2);border-radius:8px;padding:12px;text-align:center;border:1px solid var(--primary)"><div style="font-size:11px;color:var(--primary)">${goalLbl}</div><div style="font-size:24px;font-weight:700;color:var(--primary)">${goalCals}</div><div style="font-size:11px;color:var(--muted)">kcal/ngày cần ăn</div></div>
   </div>
   <div style="background:var(--card2);border-radius:8px;padding:12px">
     <div style="font-size:13px;font-weight:600;margin-bottom:8px">◎ Mục tiêu Macro/ngày</div>
@@ -862,7 +871,11 @@ function renderDashboard(){
   document.getElementById('d-bmi').textContent=bmi;
   document.getElementById('d-bmi-cat').innerHTML='<span class="badge '+cat.cls+'">'+cat.text+'</span>';
   document.getElementById('d-bmr').textContent=bmr;
-  document.getElementById('d-tdee').textContent=tdee;
+  const maintenance=r0(calcMaintenance(p));
+  document.getElementById('d-tdee').textContent=maintenance;
+  document.getElementById('d-goalcals').textContent=tdee;
+  const goalLabel={'cut':'🔥 Giảm mỡ (−15%)','bulk':'💪 Tăng cơ (+10%)','maintain':'⚖️ Duy trì'}[p.goal]||'';
+  document.getElementById('d-goalcals-sub').textContent=goalLabel;
   document.getElementById('d-weight').textContent=p.weight;
   const ms=ls(KEYS.measurements,[]);
   if(ms.length>1){const diff=r1(ms[ms.length-1].weight-ms[0].weight);document.getElementById('d-weight-sub').textContent='kg ('+(diff>=0?'+':'')+diff+' kg)';}
@@ -941,7 +954,7 @@ function renderFoodPage(){
     html+='<table style="margin-bottom:12px"><thead><tr><th>Món ăn</th><th>Lượng</th><th style="color:#6eb5ff">P(g)</th><th style="color:var(--yellow)">C(g)</th><th style="color:var(--green)">F(g)</th><th style="color:var(--primary)">Calo</th><th></th></tr></thead><tbody>';
     me.forEach(e=>{
       const ri=entries.indexOf(e);
-      html+='<tr><td style="font-weight:500">'+e.name+'</td><td style="color:var(--muted)">'+e.amount+(e.unit||'')+'</td><td style="color:#6eb5ff">'+r1(e.protein)+'</td><td style="color:var(--yellow)">'+r1(e.carbs)+'</td><td style="color:var(--green)">'+r1(e.fat)+'</td><td style="color:var(--primary);font-weight:600">'+r0(e.calo)+'</td><td><button onclick="deleteFoodEntry(\''+dt+'\','+ri+')" style="background:#2a1212;border:1px solid #3a1515;color:var(--red);border-radius:6px;cursor:pointer;padding:3px 8px;font-size:12px">✕</button></td></tr>';
+      html+='<tr draggable="true" ondragstart="dragFoodStart(event,''+dt+'','+ri+')" ondragover="event.preventDefault()" ondrop="dragFoodDrop(event,''+dt+'','+ri+')" style="cursor:grab"><td><span style="color:var(--muted);margin-right:6px">⠿</span><span style="font-weight:500">'+e.name+'</span></td><td style="color:var(--muted)">'+e.amount+(e.unit||'')+'</td><td style="color:#6eb5ff">'+r1(e.protein)+'</td><td style="color:var(--yellow)">'+r1(e.carbs)+'</td><td style="color:var(--green)">'+r1(e.fat)+'</td><td style="color:var(--primary);font-weight:600">'+r0(e.calo)+'</td><td style="display:flex;gap:4px"><button onclick="openEditFood(''+dt+'','+ri+')" style="background:var(--card2);border:1px solid var(--border);color:var(--teal);border-radius:6px;cursor:pointer;padding:3px 8px;font-size:12px">✏️</button><button onclick="deleteFoodEntry(''+dt+'','+ri+')" style="background:#2a1212;border:1px solid #3a1515;color:var(--red);border-radius:6px;cursor:pointer;padding:3px 8px;font-size:12px">✕</button></td></tr>';
     });
     html+='</tbody></table>';
   });
@@ -1665,6 +1678,93 @@ function clearWeeklyPlan(){
   renderWeeklyPlan();
 }
 
+
+// ══ EDIT FOOD ENTRY ══
+let _editFoodDt=null, _editFoodIdx=null, _editFoodRef=null;
+
+function openEditFood(dt, idx){
+  const fd=ls(KEYS.food,{});
+  const e=fd[dt]&&fd[dt][idx];
+  if(!e) return;
+  _editFoodDt=dt; _editFoodIdx=idx; _editFoodRef=e;
+  document.getElementById('ef-name-display').textContent=e.name;
+  const isUnit=(e.unit===''||!e.unit)?false:(e.unit!=='g'&&e.unit!==' g');
+  document.getElementById('ef-unit-label').textContent=e.unit||'g';
+  document.getElementById('ef-amount').value=e.amount;
+  document.getElementById('ef-meal').value=e.meal||'Trưa';
+  // base info: try to find in DB
+  const base=[...FOOD_DB,...getCustomFoods()].find(f=>f.name===e.name);
+  if(base){
+    document.getElementById('ef-base-info').textContent=
+      'Chuẩn: '+base.calo+' kcal / '+base.gram+(base.gram===1?'cái':'g')+' | P:'+base.protein+' C:'+base.carbs+' F:'+base.fat+'g';
+  } else {
+    document.getElementById('ef-base-info').textContent='';
+  }
+  previewEditCalo();
+  document.getElementById('modal-edit-food').classList.add('open');
+}
+
+function previewEditCalo(){
+  if(!_editFoodRef) return;
+  const amt=parseFloat(document.getElementById('ef-amount').value)||0;
+  const base=[...FOOD_DB,...getCustomFoods()].find(f=>f.name===_editFoodRef.name);
+  if(!base){
+    document.getElementById('ef-preview').innerHTML='<span style="color:var(--muted)">Không tìm thấy dữ liệu gốc</span>';
+    return;
+  }
+  const ratio=amt/base.gram;
+  const p=r1(base.protein*ratio), c=r1(base.carbs*ratio), f=r1(base.fat*ratio), cal=r0(base.calo*ratio);
+  document.getElementById('ef-preview').innerHTML=
+    '<b style="color:var(--primary)">'+cal+' kcal</b> &nbsp;|&nbsp; '+
+    '<span style="color:#6eb5ff">P: '+p+'g</span> &nbsp;'+
+    '<span style="color:var(--yellow)">C: '+c+'g</span> &nbsp;'+
+    '<span style="color:var(--green)">F: '+f+'g</span>';
+}
+
+function saveEditFood(){
+  if(_editFoodDt===null||_editFoodIdx===null) return;
+  const amt=parseFloat(document.getElementById('ef-amount').value);
+  if(!amt||amt<=0){alert('Số lượng không hợp lệ');return;}
+  const meal=document.getElementById('ef-meal').value;
+  const fd=ls(KEYS.food,{});
+  const e=fd[_editFoodDt][_editFoodIdx];
+  const base=[...FOOD_DB,...getCustomFoods()].find(f=>f.name===e.name);
+  if(base){
+    const ratio=amt/base.gram;
+    e.amount=amt; e.meal=meal;
+    e.protein=r1(base.protein*ratio);
+    e.carbs=r1(base.carbs*ratio);
+    e.fat=r1(base.fat*ratio);
+    e.calo=r1(base.calo*ratio);
+  } else {
+    // just update amount/meal
+    e.amount=amt; e.meal=meal;
+  }
+  ss(KEYS.food,fd);
+  document.getElementById('modal-edit-food').classList.remove('open');
+  renderFoodPage();
+}
+
+// ══ DRAG & DROP REORDER ══
+let _dragSrcDt=null, _dragSrcIdx=null;
+
+function dragFoodStart(e, dt, idx){
+  _dragSrcDt=dt; _dragSrcIdx=idx;
+  e.dataTransfer.effectAllowed='move';
+}
+
+function dragFoodDrop(e, dt, idx){
+  e.preventDefault();
+  if(_dragSrcDt!==dt||_dragSrcIdx===idx) return;
+  const fd=ls(KEYS.food,{});
+  const entries=fd[dt];
+  const dragged=entries.splice(_dragSrcIdx,1)[0];
+  entries.splice(idx,0,dragged);
+  fd[dt]=entries;
+  ss(KEYS.food,fd);
+  renderFoodPage();
+}
+
 </script>
 
 <!-- MODAL: Add Custom Food -->
@@ -1716,6 +1816,32 @@ function clearWeeklyPlan(){
       <input type="text" id="builtin-search" placeholder="Tìm trong danh sách có sẵn..." oninput="filterBuiltin(this.value)" style="margin-bottom:10px">
       <div id="builtin-items"></div>
     </div>
+  </div>
+</div>
+
+
+<!-- MODAL: Edit Food Entry -->
+<div class="modal-overlay" id="modal-edit-food">
+  <div class="modal" style="max-width:400px">
+    <div class="flex-between mb16">
+      <div style="font-size:18px;font-weight:700">✏️ Sửa thực phẩm</div>
+      <button class="btn-icon" onclick="document.getElementById('modal-edit-food').classList.remove('open')">✕</button>
+    </div>
+    <div style="font-size:15px;font-weight:600;margin-bottom:4px" id="ef-name-display"></div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:16px" id="ef-base-info"></div>
+    <label>Số lượng</label>
+    <div style="display:flex;align-items:center;gap:8px">
+      <input type="number" id="ef-amount" min="1" style="flex:1" oninput="previewEditCalo()">
+      <span id="ef-unit-label" style="color:var(--muted);font-size:13px;width:40px">g</span>
+    </div>
+    <div style="background:var(--card2);border-radius:8px;padding:10px;margin-top:10px;font-size:13px" id="ef-preview">
+      <span style="color:var(--muted)">Nhập số lượng để xem trước...</span>
+    </div>
+    <label>Bữa ăn</label>
+    <select id="ef-meal">
+      <option>Sáng</option><option>Trưa</option><option>Tối</option><option>Bữa phụ</option>
+    </select>
+    <button class="btn btn-primary mt16" style="width:100%" onclick="saveEditFood()">💾 Lưu thay đổi</button>
   </div>
 </div>
 
