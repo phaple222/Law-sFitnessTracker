@@ -354,7 +354,7 @@ tr:hover td{background:var(--card2)}
         <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
           <button class="btn btn-ghost btn-sm" onclick="document.getElementById('modal-add-food').classList.add('open')">&#43; Th&#234;m m&#243;n m&#7899;i</button>
           <button class="btn btn-ghost btn-sm" id="online-btn" onclick="toggleOnlineSearch()">&#127758; T&#236;m online</button>
-          <button class="btn btn-ghost btn-sm" onclick="openManageFoodsModal()">&#128203; Qu&#7843;n l&#253; DB</button>
+          <button class="btn btn-ghost btn-sm" onclick="openManageFoods()">&#128203; Qu&#7843;n l&#253; DB</button>
           <span id="online-status" style="font-size:12px;color:var(--muted);align-self:center;display:none">&#9203; &#272;ang t&#236;m...</span>
         </div>
         <div id="food-selected-info" style="display:none;background:var(--card2);border-radius:8px;padding:10px 12px;font-size:13px;border:1px solid var(--border)">
@@ -960,7 +960,7 @@ function renderFoodPage(){
     html+='<table style="margin-bottom:12px"><thead><tr><th>Món ăn</th><th>Lượng</th><th style="color:#6eb5ff">P(g)</th><th style="color:var(--yellow)">C(g)</th><th style="color:var(--green)">F(g)</th><th style="color:var(--primary)">Calo</th><th></th></tr></thead><tbody>';
     me.forEach(e=>{
       const ri=entries.indexOf(e);
-      html+='<tr draggable="true" ondragstart="dragFoodStart(event,\''+dt+'\','+ri+')" ondragover="event.preventDefault()" ondrop="dragFoodDrop(event,\''+dt+'\','+ri+')" style="cursor:grab"><td><span style="color:var(--muted);margin-right:6px;cursor:grab">⠿</span><span style="font-weight:500">'+e.name+'</span></td><td style="color:var(--muted)">'+e.amount+(e.unit||'')+'</td><td style="color:#6eb5ff">'+r1(e.protein)+'</td><td style="color:var(--yellow)">'+r1(e.carbs)+'</td><td style="color:var(--green)">'+r1(e.fat)+'</td><td style="color:var(--primary);font-weight:600">'+r0(e.calo)+'</td><td style="display:flex;gap:4px"><button onclick="openEditFood(\''+dt+'\','+ri+')" style="background:var(--card2);border:1px solid var(--border);color:var(--teal);border-radius:6px;cursor:pointer;padding:3px 8px;font-size:12px">✏️</button><button onclick="deleteFoodEntry(\''+dt+'\','+ri+')" style="background:#2a1212;border:1px solid #3a1515;color:var(--red);border-radius:6px;cursor:pointer;padding:3px 8px;font-size:12px">✕</button></td></tr>';
+      html+='<tr draggable="true" ondragstart="dragFoodStart(event,''+dt+'','+ri+')" ondragover="event.preventDefault()" ondrop="dragFoodDrop(event,''+dt+'','+ri+')" style="cursor:grab"><td><span style="color:var(--muted);margin-right:6px">⠿</span><span style="font-weight:500">'+e.name+'</span></td><td style="color:var(--muted)">'+e.amount+(e.unit||'')+'</td><td style="color:#6eb5ff">'+r1(e.protein)+'</td><td style="color:var(--yellow)">'+r1(e.carbs)+'</td><td style="color:var(--green)">'+r1(e.fat)+'</td><td style="color:var(--primary);font-weight:600">'+r0(e.calo)+'</td><td style="display:flex;gap:4px"><button onclick="openEditFood(''+dt+'','+ri+')" style="background:var(--card2);border:1px solid var(--border);color:var(--teal);border-radius:6px;cursor:pointer;padding:3px 8px;font-size:12px">✏️</button><button onclick="deleteFoodEntry(''+dt+'','+ri+')" style="background:#2a1212;border:1px solid #3a1515;color:var(--red);border-radius:6px;cursor:pointer;padding:3px 8px;font-size:12px">✕</button></td></tr>';
     });
     html+='</tbody></table>';
   });
@@ -1869,4 +1869,4 @@ function dragFoodDrop(e, dt, idx){
 </div>
 
 </body>
-</html>
+</html>     
